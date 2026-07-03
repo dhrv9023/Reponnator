@@ -47,8 +47,7 @@ codeautopsy-web/.vite/
 # ──────────────────────────────────────────
 # Editor / OS
 # ──────────────────────────────────────────
-.vscode/settings.json
-.vscode/launch.json
+.vscode/
 .idea/
 *.swp
 *.swo
