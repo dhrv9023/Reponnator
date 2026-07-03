@@ -65,7 +65,26 @@ class StoryContextBuilder:
         
         # Basic repo info
         repo_name = f"{self.parse_manifest.get('repo_owner', '')}/{self.parse_manifest.get('repo_name', '')}"
+        
+        # Load Phase 1 manifest.json for richer description and language distribution
+        manifest_path = self.repo_folder / "manifest.json"
+        repo_description = ""
+        languages_breakdown = ""
         primary_language = self.parse_manifest.get("primary_language", "Unknown")
+        
+        if manifest_path.exists():
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    manifest_data = json.load(f)
+                repo_description = manifest_data.get("repo", {}).get("description", "") or ""
+                lang_analysis = manifest_data.get("language_analysis", {})
+                if lang_analysis:
+                    primary_language = lang_analysis.get("primary_language", primary_language)
+                    langs = lang_analysis.get("languages", {})
+                    languages_breakdown = ", ".join(f"{l} ({data.get('percentage', 0)}%)" for l, data in langs.items())
+            except Exception as e:
+                logger.warning(f"Failed to load manifest.json in StoryContextBuilder: {e}")
+
         total_files = self.parse_manifest.get("total_files_parsed", 0)
         total_functions = self.parse_manifest.get("total_functions_extracted", 0)
         total_classes = self.parse_manifest.get("total_classes_extracted", 0)
@@ -115,7 +134,9 @@ class StoryContextBuilder:
             top_modules=top_modules,
             has_circular_deps=has_circular_deps,
             complexity_hotspots=complexity_hotspots,
-            architectural_signals=architectural_signals
+            architectural_signals=architectural_signals,
+            repo_description=repo_description,
+            languages_breakdown=languages_breakdown
         )
         
         logger.info(f"Built story context: {total_files} files, {total_functions} functions")

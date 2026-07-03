@@ -166,7 +166,8 @@ class Repponator:
         prompt = f"""Analyse this codebase and write its architectural story.
 
 Repository: {context.repo_name}
-Primary Language: {context.primary_language}
+Repository Description: {context.repo_description or 'No description provided.'}
+Language Breakdown: {context.languages_breakdown or context.primary_language}
 Detected Architectural Pattern: {context.detected_pattern}
 Entry Points: {', '.join(context.entry_points) if context.entry_points else 'None detected'}
 Core Utility Files: {', '.join(context.core_utilities) if context.core_utilities else 'None'}

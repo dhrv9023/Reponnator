@@ -33,6 +33,8 @@ class StoryContext:
     has_circular_deps: bool
     complexity_hotspots: list[str]  # top 5 highest cyclomatic complexity
     architectural_signals: list[str] # ["uses_middleware", "has_migrations", etc.]
+    repo_description: str = ""
+    languages_breakdown: str = ""
 
 
 @dataclass
