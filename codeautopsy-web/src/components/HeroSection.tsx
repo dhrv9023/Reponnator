@@ -3,9 +3,7 @@ import useTypewriter from '../hooks/useTypewriter';
 import IngestionConsole from './IngestionConsole';
 
 const TYPEWRITER_TEXT =
-  "Glad you found us. Most tools tell you what code does. We tell you why it was built that way. Drop any public GitHub repo — we'll reverse-engineer it.";
-
-
+  'Most tools answer "What does this code do?" — we answer "Why was it built this way?" Drop any public GitHub repo. Get the architecture back.';
 
 
 interface HeroSectionProps {
@@ -227,7 +225,7 @@ export default function HeroSection({ currentView, setView, isDark, onIngestComp
                   opacity:       0.9,
                 }}
               >
-                Drop a repo. Get the story. CodeAutopsy × Repponator — architecture, made human.
+                  Drop a repo. Get the architecture back.
               </div>
 
               {/* ── 2. Typewriter text ── */}
@@ -540,6 +538,251 @@ export default function HeroSection({ currentView, setView, isDark, onIngestComp
               </div>
             </div>
 
+          </div>
+        </section>
+      )}
+
+      {/* ============================================================
+          SECTION 3: WHO IS THIS FOR — 3 Personas
+          ============================================================ */}
+      {currentView === 'hero' && (
+        <section
+          id="who-is-this-for"
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            paddingLeft: 'clamp(20px, 5vw, 80px)',
+            paddingRight: 'clamp(20px, 5vw, 80px)',
+            paddingTop: '100px',
+            paddingBottom: '100px',
+            background: isDark ? 'rgba(6,8,15,0.4)' : 'rgba(248,250,252,0.6)',
+            borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`,
+          }}
+        >
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#8B5CF6',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.15em',
+            }}>
+              Who Is This For
+            </span>
+            <h2 style={{
+              fontSize: 'clamp(28px, 4vw, 42px)',
+              fontWeight: 700,
+              color: activeTextColor,
+              letterSpacing: '-0.03em',
+              marginTop: '12px',
+              marginBottom: '12px',
+            }}>
+              Built for people dropped into complex codebases
+            </h2>
+            <p style={{
+              fontSize: 'clamp(15px, 1.8vw, 18px)',
+              color: isDark ? '#a3a3a3' : '#6b7280',
+              lineHeight: 1.6,
+              marginBottom: '40px',
+              maxWidth: '640px',
+            }}>
+              No tool gives you architecture-first onboarding. Most give you code search.
+              CodeAutopsy reverses the direction — it tells you the story first.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+              {[
+                {
+                  icon: '🧑‍💻',
+                  title: 'New engineer on the team',
+                  sub: 'Day 1, 100k-line repo, no docs.',
+                  body: 'Get the full architecture story + interactive call graph in minutes. Ship confidently in week 1 instead of week 4.',
+                  color: '#3B82F6',
+                },
+                {
+                  icon: '🤝',
+                  title: 'Open-source contributor',
+                  sub: 'Want to contribute but lost in the structure.',
+                  body: 'See the founding metaphor, design tensions, and module relationships before writing a single line.',
+                  color: '#8B5CF6',
+                },
+                {
+                  icon: '🔍',
+                  title: 'Tech lead / interviewer',
+                  sub: 'Evaluating a candidate's OSS project.',
+                  body: 'Get an architectural audit — story + diagram — in 90 seconds. See decisions, not just output.',
+                  color: '#10B981',
+                },
+              ].map((p) => (
+                <div
+                  key={p.title}
+                  style={{
+                    background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.7)',
+                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+                    borderRadius: '20px',
+                    padding: '28px',
+                    backdropFilter: 'blur(12px)',
+                    position: 'relative' as const,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ position: 'absolute' as const, top: 0, left: 0, right: 0, height: '3px', background: p.color, borderRadius: '20px 20px 0 0' }} />
+                  <div style={{ fontSize: '28px', marginBottom: '14px' }}>{p.icon}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 700, color: activeTextColor, marginBottom: '6px', lineHeight: 1.3 }}>{p.title}</div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: p.color, marginBottom: '12px', textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>{p.sub}</div>
+                  <div style={{ fontSize: '14px', color: isDark ? '#a3a3a3' : '#52525b', lineHeight: 1.6 }}>{p.body}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ============================================================
+          SECTION 4: VS ALTERNATIVES
+          ============================================================ */}
+      {currentView === 'hero' && (
+        <section
+          id="vs-alternatives"
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            paddingLeft: 'clamp(20px, 5vw, 80px)',
+            paddingRight: 'clamp(20px, 5vw, 80px)',
+            paddingTop: '100px',
+            paddingBottom: '120px',
+            background: isDark ? 'rgba(10,10,12,0.3)' : 'rgba(255,255,255,0.3)',
+            borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`,
+          }}
+        >
+          <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+            <span style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#F59E0B',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.15em',
+            }}>
+              Why Not Just Use Gemini?
+            </span>
+            <h2 style={{
+              fontSize: 'clamp(28px, 4vw, 42px)',
+              fontWeight: 700,
+              color: activeTextColor,
+              letterSpacing: '-0.03em',
+              marginTop: '12px',
+              marginBottom: '14px',
+            }}>
+              How CodeAutopsy is different
+            </h2>
+            <p style={{
+              fontSize: 'clamp(15px, 1.8vw, 17px)',
+              color: isDark ? '#a3a3a3' : '#6b7280',
+              lineHeight: 1.6,
+              marginBottom: '36px',
+              maxWidth: '600px',
+            }}>
+              Gemini reads code text. CodeAutopsy builds a structured knowledge representation first —
+              a real AST call graph, pattern detector, and persistent vector store.
+            </p>
+
+            <div style={{
+              background: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.8)',
+              border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'}`,
+              borderRadius: '20px',
+              overflow: 'hidden',
+              backdropFilter: 'blur(16px)',
+            }}>
+              {/* Table header */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '2fr 1fr 1fr 1fr',
+                padding: '14px 24px',
+                background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
+                gap: '8px',
+              }}>
+                {['Capability', 'CodeAutopsy', 'Gemini / ChatGPT', 'GitHub Copilot'].map((h, i) => (
+                  <div key={h} style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    textTransform: 'uppercase' as const,
+                    letterSpacing: '0.08em',
+                    color: i === 1 ? '#10B981' : isDark ? '#6b7280' : '#9ca3af',
+                    textAlign: i === 0 ? 'left' : 'center' as const,
+                  }}>{h}</div>
+                ))}
+              </div>
+
+              {/* Table rows */}
+              {[
+                [
+                  'Architecture-first output (not just code search)',
+                  '✅ Story + Diagram + Q&A',
+                  '❌ Chat only',
+                  '❌ Inline suggestions',
+                ],
+                [
+                  'Persists index — pay ingestion cost once',
+                  '✅ ChromaDB + BM25',
+                  '❌ Re-reads on every query',
+                  '❌ No persistence',
+                ],
+                [
+                  'Works on 200k+ line repos (no context limit)',
+                  '✅ Chunk retrieval',
+                  '⚠️ Context window cap',
+                  '⚠️ Limited scope',
+                ],
+                [
+                  'Real AST call graph (not just text similarity)',
+                  '✅ Tree-sitter + NetworkX',
+                  '❌ Token similarity only',
+                  '❌ Token similarity only',
+                ],
+                [
+                  'Design decisions + architectural trade-offs',
+                  '✅ Repponator story',
+                  '⚠️ Only if you prompt well',
+                  '❌ Not its purpose',
+                ],
+              ].map((row, ri) => (
+                <div
+                  key={ri}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr 1fr 1fr',
+                    padding: '16px 24px',
+                    gap: '8px',
+                    borderBottom: ri < 4
+                      ? `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)'}`
+                      : 'none',
+                    background: ri % 2 === 0
+                      ? 'transparent'
+                      : isDark ? 'rgba(255,255,255,0.01)' : 'rgba(0,0,0,0.01)',
+                  }}
+                >
+                  {row.map((cell, ci) => (
+                    <div
+                      key={ci}
+                      style={{
+                        fontSize: ci === 0 ? '13px' : '12px',
+                        fontWeight: ci === 0 ? 400 : 600,
+                        color: ci === 0
+                          ? isDark ? '#d4d4d8' : '#3f3f46'
+                          : ci === 1
+                            ? '#10B981'
+                            : isDark ? '#71717a' : '#9ca3af',
+                        textAlign: ci === 0 ? 'left' : 'center' as const,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {cell}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
