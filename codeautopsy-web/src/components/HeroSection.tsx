@@ -609,7 +609,7 @@ export default function HeroSection({ currentView, setView, isDark, onIngestComp
                 {
                   icon: '🔍',
                   title: 'Tech lead / interviewer',
-                  sub: 'Evaluating a candidate's OSS project.',
+                  sub: `Evaluating a candidate's OSS project.`,
                   body: 'Get an architectural audit — story + diagram — in 90 seconds. See decisions, not just output.',
                   color: '#10B981',
                 },
