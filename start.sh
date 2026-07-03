@@ -49,16 +49,13 @@ start_backend() {
         python3 -m venv venv
     fi
     
-    # Activate venv
-    source venv/bin/activate
-    
     # Install/Verify requirements
     echo -e "${BLUE}📦 Checking Python dependencies...${NC}"
-    pip install --quiet -r requirements.txt
+    ./venv/bin/pip install --quiet -r requirements.txt
     
     # Launch Uvicorn server in background
     echo -e "${GREEN}✓ FastAPI Backend starting on port 8000...${NC}"
-    python3 -m uvicorn api.main:app --port 8000 &
+    ./venv/bin/python -m uvicorn api.main:app --port 8000 &
     BACKEND_PID=$!
     
     # Let backend spin up
