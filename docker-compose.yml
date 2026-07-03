@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./codeautopsy
+      dockerfile: Dockerfile
+    container_name: codeautopsy-backend
+    env_file:
+      - ./codeautopsy/.env
+    volumes:
+      - ./codeautopsy/data:/app/data
+    restart: always
+    # Exposing the backend port is optional if we only route through Nginx,
+    # but helpful for debugging or direct API access.
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./codeautopsy-web
+      dockerfile: Dockerfile
+    container_name: codeautopsy-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always

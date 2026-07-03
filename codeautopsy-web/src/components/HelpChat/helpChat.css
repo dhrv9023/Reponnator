@@ -1,0 +1,114 @@
+/* Custom Animations for HelpChat Widget */
+
+/* Message Bubble fade-in and slide-up */
+.animate-message-fade {
+  animation: message-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes message-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Typing Indicator bouncing dots */
+.animate-bounce-dot {
+  animation: bounce-dot 1.2s infinite ease-in-out;
+}
+
+@keyframes bounce-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Pulse FAB attention animation */
+.animate-fab-attention {
+  animation: fab-pulse 1.5s 2 ease-in-out;
+}
+
+@keyframes fab-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4), 0 0 0 0 rgba(99, 102, 241, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4), 0 0 0 12px rgba(99, 102, 241, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 32px rgba(99, 102, 241, 0.4), 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+/* Slide up widget window */
+.animate-widget-in {
+  animation: widget-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-widget-out {
+  animation: widget-slide-out 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes widget-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes widget-slide-out {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+}
+
+/* Custom Scrollbar for Messages Area */
+.chat-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #E5E7EB;
+  border-radius: 9999px;
+}
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: #D1D5DB;
+}
+
+/* Accessibility: Respect Reduced Motion Settings */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+  .animate-message-fade,
+  .animate-bounce-dot,
+  .animate-fab-attention,
+  .animate-widget-in,
+  .animate-widget-out {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

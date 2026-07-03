@@ -1,0 +1,69 @@
+# CodeAutopsy — Required Dependencies
+# Phase 1 + Phase 2 + Phase 3
+#
+# Install with:  pip install -r requirements.txt
+#   or in a venv: pip install -r requirements.txt
+#
+# Phase 3 note: install CPU-only PyTorch first to save ~2GB disk:
+#   pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+#   then: pip install -r requirements.txt
+
+# GitHub API client
+PyGithub==2.9.1
+
+# Environment variable management
+python-dotenv==1.2.2
+
+# HTTP / networking (used transitively; pinned for reproducibility)
+requests==2.31.0
+urllib3==2.0.7
+
+# ---------------------------------------------------------------------------
+# Phase 2: Tree-sitter Code Parsing
+# ---------------------------------------------------------------------------
+# tree-sitter-languages bundles grammars for 100+ languages (including all
+# languages CodeAutopsy targets) and is the correct package for tree-sitter
+# 0.21.x. Individual tree-sitter-{language} packages are NOT installable at
+# this version from PyPI.
+tree-sitter==0.21.3
+tree-sitter-languages==1.10.2
+
+# Testing
+pytest==8.3.5
+pytest-timeout==2.3.1
+
+# ---------------------------------------------------------------------------
+# Phase 3: Chunking + Embedding Pipeline
+# ---------------------------------------------------------------------------
+# NOTE: Install CPU-only torch first:
+#   pip install torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu
+sentence-transformers==2.7.0
+chromadb==0.5.3
+numpy==1.26.4
+tiktoken==0.7.0
+tqdm==4.66.4
+
+# ---------------------------------------------------------------------------
+# Phase 4: RAG Q&A Layer
+# ---------------------------------------------------------------------------
+ollama==0.2.1                 # Ollama Python client
+google-generativeai==0.7.2    # Gemini API client
+rank-bm25==0.2.2              # BM25 keyword search
+nltk==3.8.1                   # tokenization for BM25
+colorama==0.4.6               # colored terminal output for CLI
+
+# ---------------------------------------------------------------------------
+# Phase 5: LangGraph Agent (Call Graph Traversal)
+# ---------------------------------------------------------------------------
+langgraph==0.1.19             # StateGraph for agent orchestration
+langchain==0.2.5              # LangChain core
+langchain-core==0.2.9         # LangChain core types
+langchain-community==0.2.5    # LangChain community integrations
+
+# ---------------------------------------------------------------------------
+# Phase 8: FastAPI REST API Layer
+# ---------------------------------------------------------------------------
+fastapi==0.115.0              # FastAPI web framework
+uvicorn[standard]==0.32.0     # ASGI server with auto-reload
+pydantic==2.9.2               # Data validation (v2)
+python-multipart==0.0.12      # Form data parsing

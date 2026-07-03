@@ -1,0 +1,68 @@
+# ──────────────────────────────────────────
+# Python / Backend
+# ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.coverage
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+test_venv/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# ──────────────────────────────────────────
+# Generated repo data (large, per-run artifacts)
+# ──────────────────────────────────────────
+codeautopsy/data/repos/
+codeautopsy/data/chromadb/
+
+# ──────────────────────────────────────────
+# Node / Frontend
+# ──────────────────────────────────────────
+node_modules/
+codeautopsy-web/dist/
+codeautopsy-web/.vite/
+*.local
+
+# ──────────────────────────────────────────
+# Editor / OS
+# ──────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ──────────────────────────────────────────
+# Docker
+# ──────────────────────────────────────────
+*.log
+docker-data/
+
+# ──────────────────────────────────────────
+# Misc
+# ──────────────────────────────────────────
+*.bak
+*.tmp
