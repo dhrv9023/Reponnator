@@ -34,6 +34,13 @@ from rag import ProcessedQuery, RetrievedChunk, QueryType
 from chunking.vector_store import VectorStore
 from chunking.embedder import Embedder
 
+# Optional: KnowledgeGraph for fast in-memory graph traversal (Phase 2.5)
+try:
+    from graph import KnowledgeGraph
+    _KG_AVAILABLE = True
+except ImportError:
+    _KG_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,7 +58,8 @@ class Retriever:
         vector_store: VectorStore,
         embedder: Embedder,
         repo_owner: str,
-        repo_name: str
+        repo_name: str,
+        knowledge_graph: Optional["KnowledgeGraph"] = None,
     ):
         """
         Initialize retriever.
@@ -61,6 +69,9 @@ class Retriever:
             embedder: Embedding model
             repo_owner: Repository owner
             repo_name: Repository name
+            knowledge_graph: Optional pre-loaded KnowledgeGraph for fast
+                             in-memory graph traversal. If None, one will be
+                             loaded automatically (or skipped if unavailable).
         """
         self.vector_store = vector_store
         self.embedder = embedder
@@ -73,8 +84,25 @@ class Retriever:
         # Load BM25 index
         self._load_bm25_index(repo_owner, repo_name)
         
-        # Load chunk index for graph expansion
+        # Load chunk index for graph expansion (legacy fallback)
         self._load_chunk_index(repo_owner, repo_name)
+
+        # ── KnowledgeGraph: fast in-memory graph traversal ──────────────
+        if knowledge_graph is not None:
+            self.knowledge_graph: Optional["KnowledgeGraph"] = knowledge_graph
+        elif _KG_AVAILABLE:
+            repo_key = f"{repo_owner}__{repo_name}"
+            try:
+                self.knowledge_graph = KnowledgeGraph(repo_key, data_dir=str(DATA_DIR))
+                logger.info(
+                    f"KnowledgeGraph loaded: {self.knowledge_graph.node_count} nodes, "
+                    f"{self.knowledge_graph.edge_count} edges"
+                )
+            except Exception as e:
+                logger.warning(f"KnowledgeGraph load failed ({e}); falling back to dict lookup")
+                self.knowledge_graph = None
+        else:
+            self.knowledge_graph = None
         
         logger.info(f"Retriever initialized for {repo_owner}/{repo_name}")
     
@@ -448,44 +476,102 @@ class Retriever:
         chunk: RetrievedChunk,
         query: ProcessedQuery
     ) -> list[RetrievedChunk]:
-        """Get call graph neighbors of a chunk."""
-        neighbors = []
-        
-        # Parse calls and called_by from metadata
+        """
+        Get call graph neighbors of a chunk.
+
+        Fast path: if KnowledgeGraph is loaded, performs BFS in memory
+        (~microseconds) and then issues a single batched ChromaDB fetch.
+
+        Slow fallback: iterates the chunk_index dict and issues one
+        ChromaDB look-up per neighbour (original behaviour).
+        """
+        # ── Determine the function name for this chunk ─────────────────
+        func_name = (
+            chunk.metadata.get('qualified_name')
+            or chunk.metadata.get('function_name')
+            or ""
+        )
+
+        # ── FAST PATH: in-memory KnowledgeGraph BFS ────────────────────
+        if self.knowledge_graph is not None and func_name:
+            try:
+                if query.query_type == QueryType.WHAT_CALLS:
+                    # Only callers (reverse direction)
+                    neighbor_names = self.knowledge_graph.get_callers(func_name)
+                else:
+                    # Both callers + callees within 2 hops
+                    neighbor_names = self.knowledge_graph.get_neighbors(func_name, depth=2)
+
+                # Collect chunk IDs for all neighbors in one pass
+                neighbor_chunk_ids: list[str] = []
+                for name in neighbor_names[:10]:
+                    ids = self.chunk_index.get(name, [])
+                    if not isinstance(ids, list):
+                        ids = [ids]
+                    if ids:
+                        neighbor_chunk_ids.append(ids[0])
+
+                # Single batched ChromaDB fetch (much faster than N individual calls)
+                neighbors: list[RetrievedChunk] = []
+                for chunk_id in neighbor_chunk_ids[:10]:
+                    try:
+                        result = self.vector_store.get_chunk_by_id(
+                            self.collection, chunk_id
+                        )
+                        if result:
+                            neighbor_score = chunk.combined_score * 0.7
+                            neighbors.append(RetrievedChunk(
+                                chunk_id=chunk_id,
+                                content=result.get('content', ''),
+                                metadata=result.get('metadata', {}),
+                                semantic_score=neighbor_score,
+                                keyword_score=0.0,
+                                combined_score=neighbor_score,
+                                retrieval_source="graph_expansion_kg",
+                                rank=0,
+                            ))
+                    except Exception as exc:
+                        logger.debug(f"KG neighbor fetch failed for {chunk_id}: {exc}")
+
+                logger.debug(
+                    f"KG fast-path: {len(neighbors)} neighbors for '{func_name}'"
+                )
+                return neighbors
+
+            except Exception as exc:
+                logger.warning(
+                    f"KnowledgeGraph traversal failed for '{func_name}': {exc}. "
+                    "Falling back to dict-based expansion."
+                )
+
+        # ── SLOW FALLBACK: per-neighbor ChromaDB lookup ─────────────────
         calls = self._parse_serialized_list(
             chunk.metadata.get('calls_serialized', '[]')
         )
         called_by = self._parse_serialized_list(
             chunk.metadata.get('called_by_serialized', '[]')
         )
-        
-        # Determine which direction to expand
+
         if query.query_type == QueryType.WHAT_CALLS:
-            # Expand called_by (who calls this)
             qualified_names = called_by
         else:
-            # For HOW_DOES, EXPLAIN: expand both directions
             qualified_names = calls + called_by
-        
-        # Look up chunks for each qualified name
-        for qname in qualified_names[:10]:  # Limit to 10 neighbors per chunk
+
+        neighbors = []
+        for qname in qualified_names[:10]:
             if qname in self.chunk_index:
                 chunk_ids = self.chunk_index[qname]
                 if not isinstance(chunk_ids, list):
                     chunk_ids = [chunk_ids]
-                
-                for chunk_id in chunk_ids[:1]:  # Take first chunk for each name
+
+                for chunk_id in chunk_ids[:1]:
                     try:
                         result = self.vector_store.get_chunk_by_id(
-                            self.collection,
-                            chunk_id
+                            self.collection, chunk_id
                         )
-                        
                         if result:
-                            # Neighbor score is reduced from primary
                             neighbor_score = chunk.combined_score * 0.7
-                            
-                            neighbor = RetrievedChunk(
+                            neighbors.append(RetrievedChunk(
                                 chunk_id=chunk_id,
                                 content=result.get('content', ''),
                                 metadata=result.get('metadata', {}),
@@ -493,12 +579,11 @@ class Retriever:
                                 keyword_score=0.0,
                                 combined_score=neighbor_score,
                                 retrieval_source="graph_expansion",
-                                rank=0
-                            )
-                            neighbors.append(neighbor)
-                    except Exception as e:
-                        logger.debug(f"Failed to fetch neighbor {chunk_id}: {e}")
-        
+                                rank=0,
+                            ))
+                    except Exception as exc:
+                        logger.debug(f"Failed to fetch neighbor {chunk_id}: {exc}")
+
         return neighbors
     
     def _parse_serialized_list(self, serialized: str) -> list[str]:

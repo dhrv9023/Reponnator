@@ -49,6 +49,7 @@ tqdm==4.66.4
 ollama==0.2.1                 # Ollama Python client
 google-generativeai==0.7.2    # Gemini API client
 rank-bm25==0.2.2              # BM25 keyword search
+networkx>=3.3                 # In-memory knowledge graph (Phase 2.5)
 nltk==3.8.1                   # tokenization for BM25
 colorama==0.4.6               # colored terminal output for CLI
 
