@@ -58,7 +58,7 @@ colorama==0.4.6               # colored terminal output for CLI
 # ---------------------------------------------------------------------------
 langgraph==0.1.19             # StateGraph for agent orchestration
 langchain==0.2.5              # LangChain core
-langchain-core==0.2.9         # LangChain core types
+langchain-core>=0.2.22        # LangChain core types
 langchain-community==0.2.5    # LangChain community integrations
 
 # ---------------------------------------------------------------------------
