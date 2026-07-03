@@ -92,8 +92,21 @@ class Repponator:
             
             generation_duration = time.time() - start_time
             
-            # Parse JSON response
-            story_dict = self._parse_response(response_text)
+            # Parse JSON response with single-retry fallback
+            try:
+                story_dict = self._parse_response(response_text)
+            except ValueError as parse_err:
+                logger.warning(f"Failed to parse initial LLM response: {parse_err}. Retrying with strict JSON instruction...")
+                retry_system_prompt = REPPONATOR_SYSTEM_PROMPT + "\n\nIMPORTANT: You MUST return a strictly valid JSON object. Ensure all keys and string values are enclosed in double quotes, and all JSON syntax rules are followed. Do not include unescaped newlines inside string values."
+                retry_user_message = f"{user_prompt}\n\nYour previous response was malformed JSON and could not be parsed: {parse_err}.\nResponse that failed:\n{response_text}\n\nPlease output the correct architectural story in strict JSON format."
+                
+                response_text = self.llm_client.generate(
+                    system_prompt=retry_system_prompt,
+                    user_message=retry_user_message,
+                    max_tokens=self.MAX_TOKENS,
+                    temperature=0.2
+                )
+                story_dict = self._parse_response(response_text)
             
             # Build ArchitecturalStory
             key_modules = [
