@@ -177,7 +177,7 @@ Architectural Signals Detected: {', '.join(context.architectural_signals) if con
 Circular Dependencies Present: {'Yes' if context.has_circular_deps else 'No'}
 Complexity Hotspots: {', '.join(context.complexity_hotspots) if context.complexity_hotspots else 'None'}
 
-CRITICAL GUIDELINE: The codebase may contain multiple languages or sub-projects (e.g. a frontend client/landing page and a backend service/model). Identify and focus the architectural narrative around the CORE domain logic (the actual machine learning model, core business service, or primary functional backend engine — for example, fake-or-real audio classification models/apis) rather than just detailing basic UI components, configuration boilerplate, or boilerplate wrappers. Keep the primary commitment, origin story, and modules grounded in this core engine.
+CRITICAL GUIDELINE: The codebase may contain multiple languages or sub-projects (e.g. a frontend client/landing page and a backend service/model). Identify and focus the architectural narrative around the CORE domain logic (the actual machine learning model, core business service, or primary functional backend engine) rather than just detailing basic UI components, configuration boilerplate, or boilerplate wrappers. Keep the primary commitment, origin story, and modules grounded in this core engine.
 
 Return your response as valid JSON with exactly this structure:
 {{
