@@ -65,3 +65,4 @@ docker-data/
 # ──────────────────────────────────────────
 *.bak
 *.tmp
+docs_interview/
