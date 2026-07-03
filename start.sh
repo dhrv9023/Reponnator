@@ -51,7 +51,7 @@ start_backend() {
     
     # Install/Verify requirements
     echo -e "${BLUE}📦 Checking Python dependencies...${NC}"
-    ./venv/bin/pip install --quiet -r requirements.txt
+    ./venv/bin/python -m pip install --quiet -r requirements.txt
     
     # Launch Uvicorn server in background
     echo -e "${GREEN}✓ FastAPI Backend starting on port 8000...${NC}"
