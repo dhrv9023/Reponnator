@@ -26,6 +26,7 @@ interface DiagramCanvasProps {
   setHighlightedElement: (id: string | null) => void;
   selectedNode: CustomNode | null;
   setSelectedNode: (node: CustomNode | null) => void;
+  isDark?: boolean;
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -33,25 +34,56 @@ const CARD_W = 160;
 const CARD_H = 80;
 const CARD_R = 12; // border-radius
 
-const TIER_CONFIG: Record<string, {
-  bg: string; border: string; glow: string; badge: string; badgeText: string; icon: string; label: string;
-}> = {
-  entry_point: {
-    bg: '#071f10', border: '#22c55e', glow: '#16a34a55',
-    badge: '#14532d', badgeText: '#4ade80', icon: '▶', label: 'Entry Point',
-  },
-  core_utility: {
-    bg: '#0f0f2e', border: '#818cf8', glow: '#6366f144',
-    badge: '#1e1b4b', badgeText: '#a5b4fc', icon: '◆', label: 'Core Utility',
-  },
-  module: {
-    bg: '#0c1625', border: '#38bdf8', glow: '#0284c733',
-    badge: '#0c2233', badgeText: '#7dd3fc', icon: 'M', label: 'Module',
-  },
-};
+interface TierThemeConfig {
+  bg: string;
+  border: string;
+  glow: string;
+  badge: string;
+  badgeText: string;
+  icon: string;
+  label: string;
+  cardBg: string;
+  textColor: string;
+}
 
-function getTier(type: string) {
-  return TIER_CONFIG[type] ?? TIER_CONFIG.module;
+function getTierConfig(type: string, isDark: boolean): TierThemeConfig {
+  if (type === 'entry_point') {
+    return {
+      bg: isDark ? '#071f10' : '#f0fdf4',
+      border: '#22c55e',
+      glow: isDark ? '#16a34a55' : '#16a34a33',
+      badge: isDark ? '#14532d' : '#dcfce7',
+      badgeText: isDark ? '#4ade80' : '#15803d',
+      icon: '▶',
+      label: 'Entry Point',
+      cardBg: isDark ? '#071f10' : '#ffffff',
+      textColor: isDark ? '#f1f5f9' : '#0f172a',
+    };
+  }
+  if (type === 'core_utility') {
+    return {
+      bg: isDark ? '#0f0f2e' : '#eef2ff',
+      border: '#818cf8',
+      glow: isDark ? '#6366f144' : '#6366f133',
+      badge: isDark ? '#1e1b4b' : '#e0e7ff',
+      badgeText: isDark ? '#a5b4fc' : '#4338ca',
+      icon: '◆',
+      label: 'Core Utility',
+      cardBg: isDark ? '#0f0f2e' : '#ffffff',
+      textColor: isDark ? '#f1f5f9' : '#0f172a',
+    };
+  }
+  return {
+    bg: isDark ? '#0c1625' : '#f0f9ff',
+    border: '#38bdf8',
+    glow: isDark ? '#0284c733' : '#0284c722',
+    badge: isDark ? '#0c2233' : '#e0f2fe',
+    badgeText: isDark ? '#7dd3fc' : '#0369a1',
+    icon: 'M',
+    label: 'Module',
+    cardBg: isDark ? '#0c1625' : '#ffffff',
+    textColor: isDark ? '#f1f5f9' : '#0f172a',
+  };
 }
 
 // Smooth bezier path between two card centres
@@ -74,6 +106,7 @@ export default function DiagramCanvas({
   nodes, links, nodeCoords,
   highlightedElement, setHighlightedElement,
   selectedNode, setSelectedNode,
+  isDark = true,
 }: DiagramCanvasProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -129,7 +162,7 @@ export default function DiagramCanvas({
   nodes.forEach(n => {
     const c = nodeCoords[n.id];
     if (!c) return;
-    const t = n.type in TIER_CONFIG ? n.type : 'module';
+    const t = n.type in { entry_point: 1, core_utility: 1, module: 1 } ? n.type : 'module';
     if (!tierBounds[t]) tierBounds[t] = { minY: c.y, maxY: c.y };
     tierBounds[t].minY = Math.min(tierBounds[t].minY, c.y);
     tierBounds[t].maxY = Math.max(tierBounds[t].maxY, c.y);
@@ -141,13 +174,16 @@ export default function DiagramCanvas({
   return (
     <div style={{
       flex: 1, position: 'relative',
-      background: '#050c18',
+      background: isDark ? '#050c18' : '#f8fafc',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      transition: 'background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
     }}>
       {/* ── Dot-grid CSS background ── */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
-        backgroundImage: 'radial-gradient(circle, rgba(56,189,248,0.08) 1px, transparent 1px)',
+        backgroundImage: isDark
+          ? 'radial-gradient(circle, rgba(56,189,248,0.08) 1px, transparent 1px)'
+          : 'radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px)',
         backgroundSize: '28px 28px',
       }} />
 
@@ -158,19 +194,22 @@ export default function DiagramCanvas({
       }}>
         {(['in', 'out', 'reset'] as const).map(d => (
           <button key={d} onClick={() => handleZoom(d)} style={{
-            padding: '5px 13px',
-            background: 'rgba(255,255,255,0.05)',
+            padding: '6px 14px',
+            background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.85)',
             backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.10)',
-            borderRadius: 8, cursor: 'pointer', fontSize: 12, color: '#e2e8f0',
+            border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.12)',
+            borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600,
+            color: isDark ? '#e2e8f0' : '#0f172a',
+            boxShadow: isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.04)',
+            transition: 'all 0.2s ease',
           }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.10)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+            onMouseEnter={e => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.12)' : '#ffffff')}
+            onMouseLeave={e => (e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.85)')}
           >
             {d === 'in' ? '+ Zoom' : d === 'out' ? '– Zoom' : '↺ Reset'}
           </button>
         ))}
-        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', marginLeft: 4 }}>
+        <span style={{ fontSize: 11, color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.45)', marginLeft: 4, fontWeight: 500 }}>
           Scroll · Drag to pan
         </span>
       </div>
@@ -183,11 +222,12 @@ export default function DiagramCanvas({
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           style={{
-            padding: '6px 14px',
-            background: 'rgba(255,255,255,0.05)',
+            padding: '7px 14px',
+            background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.9)',
             backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255,255,255,0.10)',
-            borderRadius: 8, fontSize: 13, color: '#e2e8f0', outline: 'none', width: 200,
+            border: isDark ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(0,0,0,0.12)',
+            borderRadius: 8, fontSize: 13, color: isDark ? '#e2e8f0' : '#0f172a', outline: 'none', width: 200,
+            boxShadow: isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.04)',
           }}
         />
       </div>
@@ -196,13 +236,16 @@ export default function DiagramCanvas({
       <div style={{
         position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)',
         zIndex: 20,
-        background: 'rgba(5,12,24,0.8)', backdropFilter: 'blur(8px)',
-        border: '1px solid rgba(255,255,255,0.07)', borderRadius: 999,
-        padding: '4px 16px', fontSize: 11, color: 'rgba(255,255,255,0.45)',
-        display: 'flex', gap: 16,
+        background: isDark ? 'rgba(5,12,24,0.8)' : 'rgba(255,255,255,0.9)',
+        backdropFilter: 'blur(8px)',
+        border: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.08)',
+        borderRadius: 999,
+        padding: '5px 18px', fontSize: 11, color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)',
+        display: 'flex', gap: 16, fontWeight: 500,
+        boxShadow: isDark ? 'none' : '0 2px 8px rgba(0,0,0,0.04)',
       }}>
-        <span><strong style={{ color: '#38bdf8' }}>{nodes.length}</strong> nodes</span>
-        <span><strong style={{ color: '#818cf8' }}>{links.length}</strong> edges</span>
+        <span><strong style={{ color: '#0284c7' }}>{nodes.length}</strong> nodes</span>
+        <span><strong style={{ color: '#6366f1' }}>{links.length}</strong> edges</span>
       </div>
 
       {/* ── SVG Canvas ── */}
@@ -248,12 +291,12 @@ export default function DiagramCanvas({
             <feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
           <filter id="card-shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="#000" floodOpacity="0.5" />
+            <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor={isDark ? '#000' : '#64748b'} floodOpacity={isDark ? 0.5 : 0.15} />
           </filter>
 
           {/* Arrow markers */}
           <marker id="arr-default" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-            <path d="M0,0 L0,6 L8,3 z" fill="rgba(99,102,241,0.5)" />
+            <path d="M0,0 L0,6 L8,3 z" fill={isDark ? 'rgba(99,102,241,0.5)' : 'rgba(99,102,241,0.7)'} />
           </marker>
           <marker id="arr-active" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
             <path d="M0,0 L0,6 L8,3 z" fill="#818cf8" />
@@ -268,7 +311,7 @@ export default function DiagramCanvas({
           {/* ── Swimlane zone backgrounds ── */}
           {(['entry_point', 'core_utility', 'module'] as const).map(tier => {
             const b = tierBounds[tier];
-            const cfg = TIER_CONFIG[tier];
+            const cfg = getTierConfig(tier, isDark);
             if (!b) return null;
             return (
               <rect
@@ -279,10 +322,10 @@ export default function DiagramCanvas({
                 height={b.maxY - b.minY + CARD_H + 48}
                 rx={16}
                 fill={cfg.bg}
-                opacity={0.35}
+                opacity={isDark ? 0.35 : 0.6}
                 stroke={cfg.border}
                 strokeWidth={1}
-                strokeOpacity={0.15}
+                strokeOpacity={isDark ? 0.15 : 0.3}
               />
             );
           })}
@@ -290,7 +333,7 @@ export default function DiagramCanvas({
           {/* ── Tier label badges (left margin) ── */}
           {(['entry_point', 'core_utility', 'module'] as const).map(tier => {
             const b = tierBounds[tier];
-            const cfg = TIER_CONFIG[tier];
+            const cfg = getTierConfig(tier, isDark);
             if (!b) return null;
             const midY = (b.minY + b.maxY) / 2;
             return (
@@ -299,7 +342,7 @@ export default function DiagramCanvas({
                   textAnchor="middle"
                   style={{ fontSize: 10, fontWeight: 700, fontFamily: 'monospace', letterSpacing: '0.08em' }}
                   fill={cfg.border}
-                  opacity={0.55}
+                  opacity={isDark ? 0.55 : 0.8}
                   transform="rotate(-90)"
                 >
                   {cfg.label.toUpperCase()}
@@ -317,7 +360,7 @@ export default function DiagramCanvas({
             const isActive = activeId
               ? (link.source === activeId || link.target === activeId)
               : false;
-            const opacity = activeId ? (isActive ? 1 : 0.05) : 0.4;
+            const opacity = activeId ? (isActive ? 1 : 0.05) : 0.45;
             const d = edgePath(s.x, s.y, t.x, t.y);
 
             // Source node type determines colour
@@ -328,7 +371,7 @@ export default function DiagramCanvas({
               <g key={idx} style={{ opacity, transition: 'opacity 0.3s' }}>
                 <path
                   d={d} fill="none"
-                  stroke={isActive ? (isFromEntry ? '#22c55e' : '#818cf8') : 'rgba(99,102,241,0.35)'}
+                  stroke={isActive ? (isFromEntry ? '#22c55e' : '#818cf8') : (isDark ? 'rgba(99,102,241,0.35)' : 'rgba(99,102,241,0.55)')}
                   strokeWidth={isActive ? 2.5 : 1.5}
                   strokeLinecap="round"
                   markerEnd={isActive ? (isFromEntry ? 'url(#arr-green)' : 'url(#arr-active)') : 'url(#arr-default)'}
@@ -353,7 +396,7 @@ export default function DiagramCanvas({
             const c = nodeCoords[node.id];
             if (!c) return null;
             const { x, y } = c;
-            const cfg = getTier(node.type);
+            const cfg = getTierConfig(node.type, isDark);
 
             const isSelected = selectedNode?.id === node.id;
             const isHovered = hoveredNode === node.id;
@@ -391,7 +434,7 @@ export default function DiagramCanvas({
                     fill="none"
                     stroke={cfg.border}
                     strokeWidth={2}
-                    opacity={0.7}
+                    opacity={0.8}
                   />
                 )}
 
@@ -404,7 +447,7 @@ export default function DiagramCanvas({
                     fill="none"
                     stroke="#22c55e"
                     strokeWidth={1.5}
-                    opacity={isHovered ? 0.5 : 0.2}
+                    opacity={isHovered ? 0.6 : 0.25}
                     style={{ transition: 'opacity 0.3s' }}
                   />
                 )}
@@ -414,19 +457,19 @@ export default function DiagramCanvas({
                   x={0} y={0}
                   width={CARD_W} height={CARD_H}
                   rx={CARD_R}
-                  fill={cfg.bg}
-                  stroke={isHighlighted ? cfg.border : `${cfg.border}55`}
-                  strokeWidth={isHighlighted ? 2 : 1}
+                  fill={cfg.cardBg}
+                  stroke={isHighlighted ? cfg.border : (isDark ? `${cfg.border}55` : `${cfg.border}88`)}
+                  strokeWidth={isHighlighted ? 2 : 1.2}
                   style={{ transition: 'stroke-width 0.2s, stroke 0.2s' }}
                 />
 
                 {/* Top accent bar */}
                 <rect
                   x={0} y={0}
-                  width={CARD_W} height={3}
+                  width={CARD_W} height={3.5}
                   rx={CARD_R}
                   fill={cfg.border}
-                  opacity={0.8}
+                  opacity={0.9}
                 />
 
                 {/* Icon + type badge */}
@@ -442,7 +485,7 @@ export default function DiagramCanvas({
                 <text
                   x={CARD_W / 2} y={44}
                   textAnchor="middle"
-                  fill="#f1f5f9"
+                  fill={cfg.textColor}
                   style={{
                     fontSize: node.label.length > 16 ? 11 : 13,
                     fontWeight: 700,
@@ -454,8 +497,8 @@ export default function DiagramCanvas({
                 </text>
 
                 {/* Stats row */}
-                <text x={10} y={64} fill="rgba(255,255,255,0.35)"
-                  style={{ fontSize: 9, fontFamily: 'monospace', pointerEvents: 'none' }}
+                <text x={10} y={64} fill={isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)'}
+                  style={{ fontSize: 9, fontFamily: 'monospace', pointerEvents: 'none', fontWeight: 500 }}
                 >
                   {`ƒ ${node.functionCount ?? 0}  C ${node.classCount ?? 0}  ↙ ${node.callCount ?? 0}`}
                 </text>
@@ -474,17 +517,17 @@ export default function DiagramCanvas({
 
       {/* ── Selected Node Inspector Drawer ── */}
       {selectedNode && (() => {
-        const cfg = getTier(selectedNode.type);
+        const cfg = getTierConfig(selectedNode.type, isDark);
         return (
           <div style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            background: 'rgba(5,12,24,0.97)',
+            background: isDark ? 'rgba(5,12,24,0.97)' : 'rgba(255,255,255,0.97)',
             backdropFilter: 'blur(20px)',
             borderTop: `1px solid ${cfg.border}50`,
             padding: '16px 24px',
             zIndex: 30,
             display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-            boxShadow: `0 -12px 40px rgba(0,0,0,0.5), 0 -1px 0 ${cfg.border}30`,
+            boxShadow: isDark ? `0 -12px 40px rgba(0,0,0,0.5), 0 -1px 0 ${cfg.border}30` : `0 -12px 30px rgba(0,0,0,0.08), 0 -1px 0 ${cfg.border}30`,
           }}>
             <div style={{ flex: 1, marginRight: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -495,17 +538,17 @@ export default function DiagramCanvas({
                 }}>
                   {cfg.icon} {cfg.label}
                 </span>
-                <h4 style={{ fontSize: 15, fontWeight: 700, color: '#f1f5f9', margin: 0 }}>
+                <h4 style={{ fontSize: 15, fontWeight: 700, color: cfg.textColor, margin: 0 }}>
                   {selectedNode.label}
                 </h4>
-                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 999, background: 'rgba(251,191,36,0.12)', color: '#fbbf24', fontWeight: 600 }}>
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 999, background: 'rgba(251,191,36,0.12)', color: '#d97706', fontWeight: 700 }}>
                   complexity {selectedNode.complexity}
                 </span>
               </div>
-              <p style={{ fontSize: 12, color: '#94a3b8', margin: '0 0 8px', lineHeight: 1.55 }}>
+              <p style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#475569', margin: '0 0 8px', lineHeight: 1.55 }}>
                 {selectedNode.role}
               </p>
-              <div style={{ display: 'flex', gap: 20, fontSize: 12, color: '#475569' }}>
+              <div style={{ display: 'flex', gap: 20, fontSize: 12, color: isDark ? '#64748b' : '#64748b' }}>
                 <span>ƒ Functions: <strong style={{ color: cfg.badgeText }}>{selectedNode.functionCount ?? 0}</strong></span>
                 <span>C Classes: <strong style={{ color: cfg.badgeText }}>{selectedNode.classCount ?? 0}</strong></span>
                 <span>↙ Called: <strong style={{ color: cfg.badgeText }}>{selectedNode.callCount ?? 0}×</strong></span>
@@ -516,9 +559,10 @@ export default function DiagramCanvas({
               onClick={() => setSelectedNode(null)}
               style={{
                 padding: '6px 14px',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 8, cursor: 'pointer', fontSize: 12, color: '#94a3b8', flexShrink: 0,
+                background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+                borderRadius: 8, cursor: 'pointer', fontSize: 12, color: isDark ? '#94a3b8' : '#475569', flexShrink: 0,
+                fontWeight: 600,
               }}
             >
               ✕ Close

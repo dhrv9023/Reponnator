@@ -4,9 +4,10 @@ import { DiagramCanvas, CustomNode, CustomLink } from './Diagram';
 
 interface WorkspaceProps {
   repoKey?: string;
+  isDark?: boolean;
 }
 
-export default function Workspace({ repoKey = "karpathy__nanogpt" }: WorkspaceProps) {
+export default function Workspace({ repoKey = "karpathy__nanogpt", isDark = true }: WorkspaceProps) {
   const [repoDetails, setRepoDetails] = useState<RepoDetailResponse | null>(null);
   const [nodes, setNodes] = useState<CustomNode[]>([]);
   const [links, setLinks] = useState<CustomLink[]>([]);
@@ -387,6 +388,7 @@ export default function Workspace({ repoKey = "karpathy__nanogpt" }: WorkspacePr
           setHighlightedElement={setHighlightedElement}
           selectedNode={selectedNode}
           setSelectedNode={setSelectedNode}
+          isDark={isDark}
         />
 
         {/* ============================================================

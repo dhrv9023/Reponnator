@@ -19,6 +19,8 @@ export interface KeyModule {
 }
 
 export interface ArchitecturalStory {
+  project_summary: string;
+  tech_stack: string[];
   primary_commitment: string;
   origin_story: string;
   how_it_flows: string;
@@ -49,6 +51,8 @@ interface UseStoryDataReturn {
 
 // ── Demo data for the default / offline case ─────────────────────────────────
 const DEMO_STORY: ArchitecturalStory = {
+  project_summary: "itsdangerous is a Python library for cryptographically signing data — like cookies, password-reset tokens, or session IDs — so you can send them to untrusted clients and verify they haven't been tampered with when they come back. It uses HMAC-based signatures from Python's standard library, requires zero external dependencies, and is used by frameworks like Flask to secure user sessions.",
+  tech_stack: ['Python', 'Flask', 'HMAC'],
   primary_commitment: "Every token matters — build a signing library so lightweight it has no runtime dependencies, trusting only Python's stdlib and the developer's key.",
   origin_story: "itsdangerous began as a tiny module inside Flask, born from a very specific need: Armin Ronacher wanted to send secure data to untrusted clients — browser cookies, password-reset links — without trusting a database. The guiding insight was radical minimalism: if you only depend on Python's standard library, you can never have a supply-chain problem. The library crystallised around HMAC-SHA1 signatures and became its own project in 2011, carrying that zero-dependency philosophy forward to this day.",
   how_it_flows: "A caller constructs a Signer or one of its subclasses (URLSafeSerializer, TimestampSigner), passing a secret key and optional salt. The sign() method appends a separator plus an HMAC digest to the payload. On the other side, unsign() splits the value, recomputes the digest, and compares in constant time. URLSafeSerializer layers JSON serialisation and URL-safe base64 on top. TimestampSigner embeds a compact timestamp so tokens can expire. The whole pipeline is stateless: no database, no cache, no network — just cryptographic math.",
@@ -103,6 +107,8 @@ export function useStoryData(repoKey = "pallets__itsdangerous"): UseStoryDataRet
         const completionTokens = totalTokens - promptTokens;
 
         setStory({
+          project_summary:    storyDetails.project_summary    || "",
+          tech_stack:         storyDetails.tech_stack         || [],
           primary_commitment: storyDetails.primary_commitment || "No primary commitment recorded.",
           origin_story:       storyDetails.origin_story       || "No origin story recorded.",
           how_it_flows:       storyDetails.how_it_flows       || "No data flow description available.",
@@ -113,16 +119,16 @@ export function useStoryData(repoKey = "pallets__itsdangerous"): UseStoryDataRet
         });
 
         setMeta({
-          repo_owner:                  repoDetails.owner  || 'Unknown',
-          repo_name:                   repoDetails.name   || 'Unknown',
-          model_used:                  storyDetails.model_used || 'Unknown',
-          temperature:                 0.65,
-          max_tokens:                  1800,
-          prompt_tokens:               promptTokens,        // ← was wrongly storyDetails.prompt_tokens
-          completion_tokens:           completionTokens,    // ← was wrongly storyDetails.completion_tokens
-          generation_timestamp:        repoDetails.ingested_at
-                                         ? new Date(repoDetails.ingested_at).toISOString()
-                                         : new Date().toISOString(),
+          repo_owner: repoDetails.owner || 'Unknown',
+          repo_name: repoDetails.name || 'Unknown',
+          model_used: storyDetails.model_used || 'Unknown',
+          temperature: 0.65,
+          max_tokens: 1800,
+          prompt_tokens: promptTokens,        // ← was wrongly storyDetails.prompt_tokens
+          completion_tokens: completionTokens,    // ← was wrongly storyDetails.completion_tokens
+          generation_timestamp: repoDetails.ingested_at
+            ? new Date(repoDetails.ingested_at).toISOString()
+            : new Date().toISOString(),
           generation_duration_seconds: storyDetails.generation_duration_seconds || 0,
         });
 

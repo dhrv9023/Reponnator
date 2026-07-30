@@ -82,6 +82,8 @@ export interface KeyModule {
 }
 
 export interface StoryResponse {
+  project_summary?: string;
+  tech_stack?: string[];
   primary_commitment: string;
   origin_story: string;
   how_it_flows: string;

@@ -4,7 +4,7 @@ story/__init__.py — Phase 7 Architectural Story Engine (Repponator)
 Generates editorial-quality architectural narratives from Phase 2 structural analysis.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -20,7 +20,7 @@ class ModuleBrief:
 
 @dataclass
 class StoryContext:
-    """Compressed context for story generation (under 3000 tokens)."""
+    """Compressed context for story generation."""
     repo_name: str
     primary_language: str
     total_files: int
@@ -35,6 +35,8 @@ class StoryContext:
     architectural_signals: list[str] # ["uses_middleware", "has_migrations", etc.]
     repo_description: str = ""
     languages_breakdown: str = ""
+    # Actual source code excerpts — each entry: {path, language, content}
+    file_contents: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -48,13 +50,15 @@ class KeyModule:
 @dataclass
 class ArchitecturalStory:
     """Complete architectural narrative."""
-    primary_commitment: str      # One sentence
-    origin_story: str            # 2-3 sentences
-    how_it_flows: str            # 3-4 sentences
-    key_modules: list[KeyModule] # Module narratives
-    design_tensions: str         # 2-3 sentences
-    founding_metaphor: str       # One vivid metaphor
-    verdict: str                 # 2 sentences
+    project_summary: str = ""    # Plain-English: what this project is and does
+    tech_stack: list[str] = field(default_factory=list)  # ["FastAPI", "librosa", "PyTorch", ...]
+    primary_commitment: str = ""  # One sentence
+    origin_story: str = ""        # 2-3 sentences
+    how_it_flows: str = ""        # 3-4 sentences
+    key_modules: list[KeyModule] = field(default_factory=list)  # Module narratives
+    design_tensions: str = ""     # 2-3 sentences
+    founding_metaphor: str = ""   # One vivid metaphor
+    verdict: str = ""             # 2 sentences
 
 
 @dataclass

@@ -76,7 +76,7 @@ export default function App() {
             }}
           />
         ) : (
-          <Workspace repoKey={activeRepoKey} />
+          <Workspace repoKey={activeRepoKey} isDark={isDark} />
         )}
       </main>
 

@@ -110,43 +110,54 @@ export default function Navbar({
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link}
-              href={`#${link.toLowerCase()}`}
-              onClick={(e) => {
-                e.preventDefault();
-                if (link === 'Story') {
-                  setView('story');
-                } else if (link === 'Diagram') {
-                  setView('workspace');
-                }
-                // Q&A and Stack can be added later
-              }}
-              style={{
-                color: textColor,
-                textDecoration: 'none',
-                fontSize: '13px',
-                fontWeight: 500,
-                letterSpacing: '-0.01em',
-                padding: '6px 16px',
-                borderRadius: '9999px',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                opacity: 0.8,
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
-                e.currentTarget.style.opacity = '1';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-                e.currentTarget.style.opacity = '0.8';
-              }}
-            >
-              {link}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) => {
+            const isActive = (link === 'Diagram' && currentView === 'workspace') || (link === 'Story' && currentView === 'story');
+            return (
+              <a
+                key={link}
+                href={`#${link.toLowerCase()}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (link === 'Story') {
+                    setView('story');
+                  } else if (link === 'Diagram') {
+                    setView('workspace');
+                  } else if (link === 'Q&A') {
+                    setView('workspace');
+                  } else {
+                    setView('hero');
+                  }
+                }}
+                style={{
+                  color: textColor,
+                  textDecoration: 'none',
+                  fontSize: '13px',
+                  fontWeight: isActive ? 700 : 500,
+                  letterSpacing: '-0.01em',
+                  padding: '6px 16px',
+                  borderRadius: '9999px',
+                  background: isActive ? (isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)') : 'transparent',
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  opacity: isActive ? 1 : 0.75,
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+                    e.currentTarget.style.opacity = '1';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.opacity = '0.75';
+                  }
+                }}
+              >
+                {link}
+              </a>
+            );
+          })}
         </div>
 
         {/* Right buttons row: Theme Toggles + CTA Button */}

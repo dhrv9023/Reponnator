@@ -21,6 +21,7 @@ htmlcov/
 # Virtual environments
 venv/
 .venv/
+**/venv/
 env/
 ENV/
 test_venv/
@@ -33,8 +34,9 @@ test_venv/
 # ──────────────────────────────────────────
 # Generated repo data (large, per-run artifacts)
 # ──────────────────────────────────────────
-codeautopsy/data/repos/
-codeautopsy/data/chromadb/
+codeautopsy/data/*
+!codeautopsy/data/.gitkeep
+
 
 # ──────────────────────────────────────────
 # Node / Frontend

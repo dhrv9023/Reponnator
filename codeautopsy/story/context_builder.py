@@ -96,16 +96,30 @@ class StoryContextBuilder:
             detected_patterns = self.patterns
         else:
             detected_patterns = []
-        detected_pattern = detected_patterns[0] if detected_patterns else "Unknown"
+        
+        detected_pattern = "Unknown"
+        if detected_patterns:
+            first_pat = detected_patterns[0]
+            if isinstance(first_pat, dict):
+                detected_pattern = first_pat.get("pattern", "Unknown")
+            else:
+                detected_pattern = str(first_pat)
         
         # Entry points
         entry_point_names = []
         for ep in self.entry_points[:self.MAX_ENTRY_POINTS]:
             entry_funcs = ep.get("entry_functions", [])
-            for func in entry_funcs[:2]:  # Max 2 per entry point
-                # Get short name
-                short_name = self._get_short_name(func)
-                entry_point_names.append(short_name)
+            if entry_funcs:
+                for func in entry_funcs[:2]:  # Max 2 per entry point
+                    # Get short name
+                    short_name = self._get_short_name(func)
+                    entry_point_names.append(short_name)
+            else:
+                # Fallback: append the file basename itself
+                file_path = ep.get("file_path", "")
+                if file_path:
+                    short_name = Path(file_path).name
+                    entry_point_names.append(short_name)
         
         # Core utilities (files called by 3+ others)
         core_utilities = self._find_core_utilities()
@@ -136,10 +150,11 @@ class StoryContextBuilder:
             complexity_hotspots=complexity_hotspots,
             architectural_signals=architectural_signals,
             repo_description=repo_description,
-            languages_breakdown=languages_breakdown
+            languages_breakdown=languages_breakdown,
+            file_contents=self._load_file_contents()
         )
         
-        logger.info(f"Built story context: {total_files} files, {total_functions} functions")
+        logger.info(f"Built story context: {total_files} files, {total_functions} functions, {len(context.file_contents)} files with source loaded")
         
         return context
     
@@ -149,6 +164,145 @@ class StoryContextBuilder:
         if len(parts) > 2:
             return f"{parts[-2]}.{parts[-1]}"
         return qualified_name
+    
+    def _load_file_contents(self) -> list[dict]:
+        """
+        Read actual source code from disk for every fetched file.
+
+        Files are ranked by importance so the most useful code lands first
+        in the prompt.  A character budget (~14 000 chars ≈ 3 500 tokens)
+        prevents exceeding the LLM context window.
+
+        Ranking priority (higher = earlier in prompt):
+          1. Entry-point files
+          2. Files whose language matches the primary language of the repo
+          3. Larger files (more code = more signal) — within a language group
+          4. UI / landing / frontend boilerplate files are deprioritised
+
+        Returns:
+            List of {path, language, content} dicts, already token-budgeted.
+        """
+        # Code languages we care about for deep analysis
+        CODE_LANGUAGES = {
+            "Python", "JavaScript", "TypeScript", "Java", "Go", "Rust",
+            "C", "C++", "C#", "Ruby", "PHP", "Swift", "Kotlin", "Scala",
+            "R", "Julia", "Elixir", "Erlang", "Haskell", "Lua"
+        }
+        # Folder names that suggest UI / boilerplate — deprioritise but still include
+        UI_HINTS = {"landing", "frontend", "static", "public", "assets", "web", "client"}
+        MAX_LINES_PER_FILE = 80      # lines kept per file
+        CHAR_BUDGET = 14_000        # total chars across all files (≈14 K)
+        
+        # ---- read the files list from manifest.json -------------------------
+        manifest_path = self.repo_folder / "manifest.json"
+        if not manifest_path.exists():
+            logger.warning("manifest.json not found; cannot load file contents")
+            return []
+        
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+        except Exception as exc:
+            logger.warning(f"Failed to read manifest.json: {exc}")
+            return []
+        
+        files_list = manifest_data.get("files", [])
+        if not files_list:
+            return []
+        
+        primary_language = (
+            manifest_data.get("language_analysis", {})
+            .get("primary_language", "")
+        )
+        
+        # Collect entry point paths from parse manifest for boosted ranking
+        entry_paths = set()
+        for ep in self.entry_points:
+            p = ep.get("file_path", "") if isinstance(ep, dict) else ""
+            if p:
+                entry_paths.add(p)
+        # Also from parse_manifest entry_points (may be plain strings)
+        for ep in self.parse_manifest.get("entry_points", []):
+            if isinstance(ep, str):
+                entry_paths.add(ep)
+            elif isinstance(ep, dict):
+                entry_paths.add(ep.get("file_path", ""))
+        
+        # ---- score each file -----------------------------------------------
+        def _score(f: dict) -> tuple:
+            path = f.get("path", "")
+            lang = f.get("language", "")
+            size = f.get("size_bytes", 0)
+            
+            is_entry      = path in entry_paths
+            is_primary    = lang == primary_language
+            is_code       = lang in CODE_LANGUAGES
+            parts_lower   = [p.lower() for p in Path(path).parts]
+            is_ui         = any(hint in parts_lower for hint in UI_HINTS)
+            
+            # Higher tuple = ranked first (Python tuple comparison)
+            return (
+                int(is_entry),       # entry points first
+                int(is_code),        # code files over non-code
+                int(is_primary),     # primary language boosted
+                int(not is_ui),      # non-UI files before UI
+                size,                # larger file = more signal
+            )
+        
+        ranked = sorted(files_list, key=_score, reverse=True)
+        
+        # ---- read files from disk up to budget -----------------------------
+        files_dir = self.repo_folder / "files"
+        results: list[dict] = []
+        chars_used = 0
+        
+        for file_info in ranked:
+            if chars_used >= CHAR_BUDGET:
+                break
+            
+            rel_path = file_info.get("path", "")
+            language = file_info.get("language", "")
+            
+            if not rel_path or language not in CODE_LANGUAGES:
+                continue
+            
+            disk_path = files_dir / rel_path
+            if not disk_path.exists():
+                continue
+            
+            try:
+                source = disk_path.read_text(encoding="utf-8", errors="replace")
+            except Exception as exc:
+                logger.debug(f"Could not read {disk_path}: {exc}")
+                continue
+            
+            # Truncate to budget-aware line limit
+            lines = source.splitlines()
+            kept_lines = lines[:MAX_LINES_PER_FILE]
+            truncated = len(lines) > MAX_LINES_PER_FILE
+            content = "\n".join(kept_lines)
+            if truncated:
+                content += f"\n... ({len(lines) - MAX_LINES_PER_FILE} more lines not shown)"
+            
+            # Respect overall char budget
+            remaining = CHAR_BUDGET - chars_used
+            if len(content) > remaining:
+                content = content[:remaining] + "\n... (truncated to fit token budget)"
+                chars_used = CHAR_BUDGET
+            else:
+                chars_used += len(content)
+            
+            results.append({
+                "path": rel_path,
+                "language": language,
+                "content": content,
+            })
+            
+            if chars_used >= CHAR_BUDGET:
+                break
+        
+        logger.info(f"Loaded {len(results)} source files into story context ({chars_used:,} chars)")
+        return results
     
     def _find_core_utilities(self) -> list[str]:
         """Find files called by 3+ other files."""

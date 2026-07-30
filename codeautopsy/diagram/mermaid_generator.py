@@ -67,6 +67,9 @@ class MermaidGenerator:
                                     self.qn_to_file[qn] = file_path
                 except Exception as exc:
                     logger.error(f"Failed to load parsed file {json_path}: {exc}")
+
+        # Load actual source-file contents for code-aware analysis
+        self.source_contents = self._load_source_contents()
     
     def _load_json(self, filename: str) -> dict:
         """Load JSON file from parsed folder."""
@@ -77,6 +80,49 @@ class MermaidGenerator:
         
         with open(path, "r") as f:
             return json.load(f)
+    
+    def _load_source_contents(self) -> dict[str, str]:
+        """
+        Load actual source code for every fetched file.
+
+        Returns a dict mapping relative file path → first 40 lines of source.
+        This is used by _build_nodes() to attach real code context to each
+        diagram node so the metadata tooltip reflects what the file actually does.
+        """
+        CODE_LANGUAGES = {
+            "Python", "JavaScript", "TypeScript", "Java", "Go", "Rust",
+            "C", "C++", "C#", "Ruby", "PHP", "Swift", "Kotlin", "Scala",
+        }
+        MAX_LINES = 40  # Short excerpt — diagram nodes just need a hint
+        result: dict[str, str] = {}
+
+        manifest_path = self.repo_folder / "manifest.json"
+        if not manifest_path.exists():
+            return result
+
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+        except Exception:
+            return result
+
+        files_dir = self.repo_folder / "files"
+        for file_info in manifest_data.get("files", []):
+            rel_path = file_info.get("path", "")
+            language = file_info.get("language", "")
+            if not rel_path or language not in CODE_LANGUAGES:
+                continue
+            disk_path = files_dir / rel_path
+            if not disk_path.exists():
+                continue
+            try:
+                lines = disk_path.read_text(encoding="utf-8", errors="replace").splitlines()
+                result[rel_path] = "\n".join(lines[:MAX_LINES])
+            except Exception as exc:
+                logger.debug(f"Could not read {disk_path}: {exc}")
+
+        logger.info(f"Diagram: loaded source for {len(result)} files")
+        return result
     
     def generate(self) -> tuple[str, dict]:
         """
@@ -107,7 +153,7 @@ class MermaidGenerator:
         return mermaid_code, metadata
     
     def _build_nodes(self):
-        """Build nodes from parsed files."""
+        """Build nodes from parsed files, enriched with actual source code."""
         for file_data in self.parsed_files:
             file_path = file_data.get("file_path", "")
             if not file_path:
@@ -119,6 +165,16 @@ class MermaidGenerator:
             
             # Determine node type
             node_type = self._determine_node_type(file_path, functions, classes)
+
+            # Extract top-level imports as additional context
+            imports = [
+                imp.get("module", "")
+                for imp in file_data.get("imports", [])
+                if imp.get("module") and imp.get("type") not in ("stdlib",)
+            ][:8]
+
+            # Attach real source excerpt if available (keyed by relative path)
+            source_snippet = self.source_contents.get(file_path, "")
             
             # Create node
             self.nodes[file_path] = {
@@ -127,6 +183,8 @@ class MermaidGenerator:
                 "type": node_type,
                 "functions": [f.get("name", "") for f in functions],
                 "classes": [c.get("name", "") for c in classes],
+                "imports": imports,
+                "source_snippet": source_snippet,
                 "call_count": 0,  # Will be updated later
                 "called_by_count": 0
             }
@@ -468,6 +526,16 @@ class MermaidGenerator:
         for file_path, node in self.nodes.items():
             node_id = self.node_id_map[file_path]
             
+            # Build a short description from available signals
+            desc_parts = []
+            if node.get("classes"):
+                desc_parts.append(f"Classes: {', '.join(node['classes'][:3])}")
+            if node.get("functions"):
+                desc_parts.append(f"Functions: {', '.join(node['functions'][:4])}")
+            if node.get("imports"):
+                desc_parts.append(f"Depends on: {', '.join(node['imports'][:4])}")
+            description = " | ".join(desc_parts) if desc_parts else ""
+
             nodes_metadata.append({
                 "id": node_id,
                 "label": node["label"],
@@ -475,6 +543,8 @@ class MermaidGenerator:
                 "type": node["type"],
                 "functions": node["functions"],
                 "classes": node["classes"],
+                "imports": node.get("imports", []),
+                "description": description,
                 "call_count": node["call_count"],
                 "called_by_count": node["called_by_count"]
             })

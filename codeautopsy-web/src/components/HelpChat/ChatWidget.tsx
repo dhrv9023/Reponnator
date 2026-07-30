@@ -62,7 +62,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
   const showOptions = !showEmailForm && !isTyping && activeOptions && currentNodeId !== "end" && currentNodeId !== "ask_ai";
 
   return (
-    <div className="flex flex-col w-full h-full bg-white rounded-2xl overflow-hidden shadow-2xl border border-gray-100/80 animate-widget-in">
+    <div className="flex flex-col w-full h-full bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-100/80 dark:border-zinc-800 animate-widget-in">
       {/* Header Section */}
       <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white select-none">
         <div className="flex items-center gap-2.5">
@@ -109,7 +109,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           onSuccess={handleEmailSent}
         />
       ) : (
-        <div className="flex-grow flex flex-col min-h-0 bg-[#F8F9FA]">
+        <div className="flex-grow flex flex-col min-h-0 bg-[#F8F9FA] dark:bg-zinc-950">
           {/* Scrollable Messages Area */}
           <div
             ref={scrollContainerRef}
@@ -123,12 +123,12 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
           </div>
 
           {/* Controls / Options Area */}
-          <div className="bg-gradient-to-t from-white via-white to-transparent pt-3">
+          <div className="bg-gradient-to-t from-white via-white dark:from-zinc-900 dark:via-zinc-900 to-transparent pt-3">
             {/* Back button */}
             {showBackButton && (
               <button
                 onClick={goBack}
-                className="mx-4 mb-2 flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors select-none cursor-pointer outline-none"
+                className="mx-4 mb-2 flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors select-none cursor-pointer outline-none"
               >
                 ← Back
               </button>
@@ -157,14 +157,14 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({
                     input.value = "";
                   }
                 }}
-                className="flex items-center gap-2 px-4 pb-4 pt-1 border-t border-gray-100/60 animate-fade-in"
+                className="flex items-center gap-2 px-4 pb-4 pt-1 border-t border-gray-100/60 dark:border-zinc-800 animate-fade-in"
               >
                 <input
                   name="manualQuestion"
                   type="text"
                   placeholder="Type a question about the project..."
                   required
-                  className="flex-grow px-3.5 py-2.5 text-[11px] border border-gray-200 focus:border-indigo-500 rounded-xl focus:outline-none bg-[#F8F9FA] placeholder-gray-400/80 font-medium transition-all"
+                  className="flex-grow px-3.5 py-2.5 text-[11px] border border-gray-200 dark:border-zinc-700 focus:border-indigo-500 rounded-xl focus:outline-none bg-[#F8F9FA] dark:bg-zinc-800 text-gray-800 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 font-medium transition-all"
                   autoComplete="off"
                 />
                 <button

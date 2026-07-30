@@ -51,7 +51,12 @@ start_backend() {
     
     # Install/Verify requirements
     echo -e "${BLUE}📦 Checking Python dependencies...${NC}"
-    ./venv/bin/python -m pip install --quiet -r requirements.txt
+    if ./venv/bin/python -c "import fastapi, uvicorn, pydantic, chromadb, langgraph, networkx, sentence_transformers, tiktoken, rank_bm25" 2>/dev/null; then
+        echo -e "${GREEN}✓ Dependencies verified.${NC}"
+    else
+        echo -e "${YELLOW}⚙️ Installing missing requirements...${NC}"
+        ./venv/bin/python -m pip install -r requirements.txt
+    fi
     
     # Launch Uvicorn server in background
     echo -e "${GREEN}✓ FastAPI Backend starting on port 8000...${NC}"

@@ -38,13 +38,13 @@ export const OptionButtons: React.FC<OptionButtonsProps> = ({
         const isThisSelected = selectedOption === option;
         
         // Button styles based on active selection transition
-        let btnClasses = "w-full flex items-center justify-between text-left px-4 py-2.5 rounded-xl text-sm font-medium border text-indigo-700 bg-white border-indigo-100 hover:bg-indigo-50/50 hover:border-indigo-300 active:scale-[0.98] transition-all duration-150 shadow-sm cursor-pointer";
+        let btnClasses = "w-full flex items-center justify-between text-left px-4 py-2.5 rounded-xl text-sm font-medium border text-indigo-700 dark:text-indigo-300 bg-white dark:bg-zinc-800 border-indigo-100 dark:border-zinc-700 hover:bg-indigo-50/50 dark:hover:bg-zinc-700/80 hover:border-indigo-300 dark:hover:border-zinc-600 active:scale-[0.98] transition-all duration-150 shadow-sm cursor-pointer";
         
         if (isTransitioning) {
           if (isThisSelected) {
             btnClasses = "w-full flex items-center justify-between text-left px-4 py-2.5 rounded-xl text-sm font-medium border bg-indigo-600 border-indigo-600 text-white shadow-md scale-[0.98] transition-all duration-150";
           } else {
-            btnClasses = "w-full flex items-center justify-between text-left px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-100 text-gray-400 bg-gray-50/50 opacity-40 transition-all duration-150 pointer-events-none";
+            btnClasses = "w-full flex items-center justify-between text-left px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-100 dark:border-zinc-800 text-gray-400 dark:text-zinc-500 bg-gray-50/50 dark:bg-zinc-900/50 opacity-40 transition-all duration-150 pointer-events-none";
           }
         }
 

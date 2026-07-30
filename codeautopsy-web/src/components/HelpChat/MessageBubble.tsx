@@ -29,17 +29,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
     return (
       <div className="flex items-start gap-2.5 mb-3.5 animate-message-fade max-w-[85%] self-start">
         {/* Bot Avatar */}
-        <div className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-sm shadow-sm flex-shrink-0 select-none">
+        <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 flex items-center justify-center text-sm shadow-sm flex-shrink-0 select-none">
           🤖
         </div>
 
         {/* Message Content */}
         <div className="flex flex-col gap-1">
-          <div className="bg-white border border-gray-100 text-gray-800 text-sm rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm leading-relaxed break-words max-w-full">
+          <div className="bg-white dark:bg-zinc-800 border border-gray-100 dark:border-zinc-700 text-gray-800 dark:text-zinc-100 text-sm rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm leading-relaxed break-words max-w-full">
             {renderedText}
           </div>
           {/* Timestamp */}
-          <span className="text-[10px] text-gray-400 pl-1">
+          <span className="text-[10px] text-gray-400 dark:text-zinc-500 pl-1">
             {formatTime(timestamp)}
           </span>
         </div>

@@ -30,7 +30,7 @@ class Repponator:
     """
     
     TEMPERATURE = 0.65  # Creative but grounded
-    MAX_TOKENS = 1800
+    MAX_TOKENS = 2400   # Increased: richer, code-grounded responses need more room
     
     def __init__(self, repo_folder: Path):
         """
@@ -119,6 +119,8 @@ class Repponator:
             ]
             
             story = ArchitecturalStory(
+                project_summary=story_dict.get("project_summary", ""),
+                tech_stack=story_dict.get("tech_stack", []),
                 primary_commitment=story_dict.get("primary_commitment", ""),
                 origin_story=story_dict.get("origin_story", ""),
                 how_it_flows=story_dict.get("how_it_flows", ""),
@@ -160,7 +162,7 @@ class Repponator:
             raise
     
     def _build_user_prompt(self, context) -> str:
-        """Build user prompt from context."""
+        """Build user prompt from context, including actual source code."""
         # Build top modules summary
         top_modules_summary = []
         for module in context.top_modules[:5]:  # Top 5 only
@@ -176,7 +178,23 @@ class Repponator:
             
             top_modules_summary.append(summary)
         
+        # Build the source code section from actual file contents
+        source_section = ""
+        if context.file_contents:
+            file_blocks = []
+            for fc in context.file_contents:
+                block = f"=== {fc['path']} ({fc['language']}) ===\n{fc['content']}"
+                file_blocks.append(block)
+            source_section = (
+                "\n\n--- ACTUAL SOURCE CODE (read every file carefully) ---\n"
+                + "\n\n".join(file_blocks)
+                + "\n--- END OF SOURCE CODE ---"
+            )
+        
         prompt = f"""Analyse this codebase and write its architectural story.
+You have been given the ACTUAL SOURCE CODE of the repository below. Read it carefully.
+Ground your analysis in what the code literally does — the libraries it uses, the algorithms it implements,
+the data it processes, the APIs it exposes — not just the file names or structural patterns.
 
 Repository: {context.repo_name}
 Repository Description: {context.repo_description or 'No description provided.'}
@@ -186,28 +204,35 @@ Entry Points: {', '.join(context.entry_points) if context.entry_points else 'Non
 Core Utility Files: {', '.join(context.core_utilities) if context.core_utilities else 'None'}
 Top Modules by Call Volume:
 {chr(10).join('  - ' + s for s in top_modules_summary)}
-Architectural Signals Detected: {', '.join(context.architectural_signals) if context.architectural_signals else 'None'}
-Circular Dependencies Present: {'Yes' if context.has_circular_deps else 'No'}
+Architectural Signals: {', '.join(context.architectural_signals) if context.architectural_signals else 'None'}
+Circular Dependencies: {'Yes' if context.has_circular_deps else 'No'}
 Complexity Hotspots: {', '.join(context.complexity_hotspots) if context.complexity_hotspots else 'None'}
+{source_section}
 
-CRITICAL GUIDELINE: The codebase may contain multiple languages or sub-projects (e.g. a frontend client/landing page and a backend service/model). Identify and focus the architectural narrative around the CORE domain logic (the actual machine learning model, core business service, or primary functional backend engine) rather than just detailing basic UI components, configuration boilerplate, or boilerplate wrappers. Keep the primary commitment, origin story, and modules grounded in this core engine.
+CRITICAL GUIDELINE: Focus the architectural narrative on the CORE domain logic — the actual ML model, business service, or primary functional engine — not UI boilerplate, landing pages, or config wrappers.
+Name specific libraries, algorithms, data structures, and APIs you can see in the source code.
+Be precise and grounded. If the code extracts MFCC features with librosa, say so. If it runs a transformer with PyTorch, say so. If it processes audio with an LSTM and serves it via FastAPI, say so.
 
 Return your response as valid JSON with exactly this structure:
 {{
-  "primary_commitment": "One sentence naming the founding architectural decision.",
+  "project_summary": "2-3 plain-English sentences: what this project does, its domain (e.g. audio deepfake detection, GPT training, REST API framework), the core tech stack visible in the code, and who would use it.",
+  "tech_stack": ["FastAPI", "PyTorch", "librosa"],
+  "primary_commitment": "One sentence naming the founding architectural decision, referencing specific technologies/algorithms seen in the code.",
   "origin_story": "2-3 sentences explaining why this commitment was likely made and what problem it solved.",
-  "how_it_flows": "3-4 sentences describing how data and control flow through the system as a direct consequence of the primary commitment.",
+  "how_it_flows": "3-4 sentences describing how data and control flow through the system, referencing actual code paths and libraries.",
   "key_modules": [
     {{
       "module_id": "filename used as diagram node id",
       "role_title": "Short poetic role name — e.g. The Gateway, The Orchestrator, The Ledger",
-      "explanation": "2 sentences explaining what this module does and why it exists exactly where it does in the architecture."
+      "explanation": "2 sentences explaining what this module does and why it exists exactly where it does in the architecture, referencing specific functions or classes from the source."
     }}
-  ], // Return exactly 3 to 5 key modules (no fewer than 3) corresponding to the most critical modules.
-  "design_tensions": "2-3 sentences naming the trade-offs and sacrifices the architecture had to make.",
+  ],
+  "design_tensions": "2-3 sentences naming the real trade-offs and sacrifices visible in the actual code.",
   "founding_metaphor": "One vivid metaphor that captures the entire architecture in a single sentence.",
   "verdict": "2 sentences honestly assessing whether this is a well-constructed architecture and what would break it."
-}}"""
+}}
+
+For tech_stack: list ONLY the real third-party libraries and frameworks you can see imported in the source code — e.g. FastAPI, librosa, PyTorch, TensorFlow, React, Express, Django. Do NOT list standard library modules or language names."""
         
         return prompt
     
@@ -235,7 +260,8 @@ Return your response as valid JSON with exactly this structure:
         try:
             story_dict = json.loads(text)
             
-            # Validate required fields
+            # Validate only the core required fields — new fields (project_summary, tech_stack)
+            # are optional for backward compat with old stories
             required_fields = [
                 "primary_commitment",
                 "origin_story",
@@ -266,6 +292,8 @@ Return your response as valid JSON with exactly this structure:
         logger.warning("Generating fallback story for small repo")
         
         story = ArchitecturalStory(
+            project_summary=f"This is a focused {context.primary_language} library with {context.total_files} files and {context.total_functions} functions. It appears to be a small, single-purpose tool.",
+            tech_stack=[context.primary_language],
             primary_commitment=f"This is a minimal {context.primary_language} library with {context.total_files} files.",
             origin_story=f"The codebase is intentionally small and focused. With only {context.total_functions} functions across {context.total_files} files, it prioritizes simplicity over architectural complexity.",
             how_it_flows="The control flow is straightforward and linear. There are no complex abstractions or layered architectures — just direct function calls serving a single, well-defined purpose.",
@@ -305,6 +333,8 @@ Return your response as valid JSON with exactly this structure:
         # Save story
         story_path = self.output_folder / "story_output.json"
         story_dict = {
+            "project_summary": story.project_summary,
+            "tech_stack": story.tech_stack,
             "primary_commitment": story.primary_commitment,
             "origin_story": story.origin_story,
             "how_it_flows": story.how_it_flows,
@@ -369,6 +399,8 @@ Return your response as valid JSON with exactly this structure:
         ]
         
         story = ArchitecturalStory(
+            project_summary=story_dict.get("project_summary", ""),
+            tech_stack=story_dict.get("tech_stack", []),
             primary_commitment=story_dict.get("primary_commitment", ""),
             origin_story=story_dict.get("origin_story", ""),
             how_it_flows=story_dict.get("how_it_flows", ""),

@@ -109,12 +109,12 @@ export function StoryPage({ repoKey, onNodeHighlight }: StoryPageProps) {
   }
 
   const chapters = [
-    { id: 0, label: 'Origin Story',       content: story.origin_story,     color: '#6366f1', icon: '🌱' },
-    { id: 1, label: 'How It Flows',        content: story.how_it_flows,      color: '#8b5cf6', icon: '🌊' },
-    { id: 2, label: 'Key Modules',         content: null,                   color: '#3b82f6', icon: '🧩' },
-    { id: 3, label: 'Design Tensions',     content: story.design_tensions,   color: '#f59e0b', icon: '⚖️' },
-    { id: 4, label: 'Founding Metaphor',   content: null,                   color: '#10b981', icon: '🔮' },
-    { id: 5, label: 'Verdict',             content: story.verdict,           color: '#ec4899', icon: '🏁' },
+    { id: 0, label: 'Origin Story', content: story.origin_story, color: '#6366f1', icon: '🌱' },
+    { id: 1, label: 'How It Flows', content: story.how_it_flows, color: '#8b5cf6', icon: '🌊' },
+    { id: 2, label: 'Key Modules', content: null, color: '#3b82f6', icon: '🧩' },
+    { id: 3, label: 'Design Tensions', content: story.design_tensions, color: '#f59e0b', icon: '⚖️' },
+    { id: 4, label: 'Founding Metaphor', content: null, color: '#10b981', icon: '🔮' },
+    { id: 5, label: 'Verdict', content: story.verdict, color: '#ec4899', icon: '🏁' },
   ];
 
   return (
@@ -136,7 +136,12 @@ export function StoryPage({ repoKey, onNodeHighlight }: StoryPageProps) {
       <ParticleField />
 
       {/* ── Hero Section ── */}
-      <StoryHero meta={meta} commitment={story.primary_commitment} />
+      <StoryHero
+        meta={meta}
+        commitment={story.primary_commitment}
+        projectSummary={story.project_summary}
+        techStack={story.tech_stack}
+      />
 
       {/* ── Chapter Timeline + Content ── */}
       <div ref={contentRef} className="relative z-10 max-w-5xl mx-auto px-6 pb-32">

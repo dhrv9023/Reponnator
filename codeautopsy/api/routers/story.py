@@ -94,6 +94,8 @@ async def get_story(repo_key: str):
         ))
     
     return StoryResponse(
+        project_summary=story_data.get('project_summary', ''),
+        tech_stack=story_data.get('tech_stack', []),
         primary_commitment=story_data.get('primary_commitment', ''),
         origin_story=story_data.get('origin_story', ''),
         how_it_flows=story_data.get('how_it_flows', ''),

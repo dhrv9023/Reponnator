@@ -128,6 +128,8 @@ class KeyModule(BaseModel):
 
 class StoryResponse(BaseModel):
     """Phase 7 architectural story output."""
+    project_summary: str = ""
+    tech_stack: List[str] = Field(default_factory=list, description="Detected libraries/frameworks from source code")
     primary_commitment: str
     origin_story: str
     how_it_flows: str
