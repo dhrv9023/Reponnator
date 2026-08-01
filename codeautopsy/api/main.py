@@ -36,17 +36,27 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Setup CORS
+# ---------------------------------------------------------------------------
+# CORS — origins read from the CORS_ORIGINS environment variable.
+#
+# Local dev default (no .env change needed):
+#   http://localhost:5173,http://localhost:5174,http://localhost:3000
+#
+# Staging / production — set in .env or deployment config:
+#   CORS_ORIGINS=https://your-app.vercel.app,https://your-api.onrender.com
+# ---------------------------------------------------------------------------
+_raw_cors_origins = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:5173,http://localhost:5174,http://localhost:3000,"
+    "http://127.0.0.1:5173,http://127.0.0.1:5174,http://127.0.0.1:3000",
+)
+ALLOWED_ORIGINS: list[str] = [
+    origin.strip() for origin in _raw_cors_origins.split(",") if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

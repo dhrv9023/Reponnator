@@ -465,29 +465,50 @@ GROQ_MODEL: str = "llama-3.3-70b-versatile" # Default Groq model
 # ---------------------------------------------------------------------------
 # RAG Configuration
 # ---------------------------------------------------------------------------
-TOP_K_SEMANTIC: int = 15               # chunks retrieved by semantic search
-TOP_K_KEYWORD: int = 10                # chunks retrieved by BM25
-TOP_K_HYDE: int = 8                    # chunks retrieved by HyDE
-TOP_K_FINAL: int = 12                  # chunks after reranking + dedup
-                                       # sent to context builder
+TOP_K_SEMANTIC: int = 15               # Initial heuristic — not benchmarked against recall.
+                                       # Increasing this improves recall at the cost of context
+                                       # window budget. Evaluate with precision@k on a fixed
+                                       # Q&A set before changing.
+TOP_K_KEYWORD: int = 10                # Initial heuristic paired with TOP_K_SEMANTIC.
+                                       # 15 semantic + 10 keyword = 25 candidates before dedup.
+TOP_K_HYDE: int = 8                    # Initial heuristic. HyDE benefit is validated on
+                                       # code-specific embedding models (CodeBERT, UniXcoder).
+                                       # all-MiniLM-L6-v2 is a general sentence-pair model;
+                                       # the benefit in this embedding space is unverified.
+TOP_K_FINAL: int = 12                  # Initial heuristic. 15+10+8 = 33 candidates fused to
+                                       # 12 — dedup rate varies by query. Not measured.
+                                       # Sent to context builder after reciprocal rank fusion.
 
-GRAPH_EXPANSION_DEPTH: int = 1         # how many hops to expand graph
-                                       # 1 = include direct callers/callees
-MAX_EXPANSION_CHUNKS: int = 6          # max chunks added by graph expansion
+GRAPH_EXPANSION_DEPTH: int = 1         # 1 hop = direct callers/callees only.
+                                       # NOTE: README references 2-hop BFS in some places;
+                                       # this config controls the actual retriever behaviour.
+                                       # Increasing to 2 expands context but may add noise
+                                       # from unrelated transitive dependencies.
+MAX_EXPANSION_CHUNKS: int = 6          # Max chunks added by graph expansion per query.
+                                       # Initial heuristic — not tuned against answer quality.
 
 # ---------------------------------------------------------------------------
 # Context Window Management
 # ---------------------------------------------------------------------------
-MAX_CONTEXT_TOKENS: int = 3000         # max tokens in assembled context
-                                       # conservative limit for all models
-MAX_ANSWER_TOKENS: int = 1000          # max tokens in LLM answer
+MAX_CONTEXT_TOKENS: int = 3000         # Conservative limit chosen to stay within the
+                                       # smallest supported model (Groq free-tier context).
+                                       # At 200-token chunks, this allows ~12 chunks max.
+                                       # Whether 12 chunks are sufficient for multi-file
+                                       # architectural questions has not been evaluated.
+MAX_ANSWER_TOKENS: int = 1000          # Max tokens in LLM answer. Initial heuristic.
 CONTEXT_CHUNK_SEPARATOR: str = "\n\n---\n\n"
 
 # ---------------------------------------------------------------------------
 # Hybrid Search Weights
 # ---------------------------------------------------------------------------
-SEMANTIC_WEIGHT: float = 0.65          # weight for semantic similarity score
-KEYWORD_WEIGHT: float = 0.35           # weight for BM25 score
+SEMANTIC_WEIGHT: float = 0.65          # Initial heuristic — no ablation study performed.
+                                       # Rationale: conceptual questions ("how does auth work?")
+                                       # are more common than exact-symbol lookups, so semantic
+                                       # search is weighted higher. To evaluate: build a 50-question
+                                       # eval set split between conceptual and symbol-lookup queries,
+                                       # test at SEMANTIC_WEIGHT in [0.5, 0.6, 0.65, 0.7, 0.8],
+                                       # report MRR. One degree of freedom — KEYWORD_WEIGHT = 1 - this.
+KEYWORD_WEIGHT: float = 0.35           # Complement of SEMANTIC_WEIGHT (must sum to 1.0).
 
 # ---------------------------------------------------------------------------
 # Conversation
@@ -499,8 +520,12 @@ MAX_HISTORY_TOKENS: int = 800          # max tokens from history to include
 # ---------------------------------------------------------------------------
 # Confidence thresholds
 # ---------------------------------------------------------------------------
-HIGH_CONFIDENCE_THRESHOLD: float = 0.75   # avg combined_score for high confidence
-MEDIUM_CONFIDENCE_THRESHOLD: float = 0.50
+HIGH_CONFIDENCE_THRESHOLD: float = 0.75   # Initial heuristic — no calibration data.
+                                          # A combined_score of 0.75 is treated as high
+                                          # confidence, but whether 0.74 is actually
+                                          # "low confidence" has not been validated against
+                                          # a labelled answer-quality dataset.
+MEDIUM_CONFIDENCE_THRESHOLD: float = 0.50  # Initial heuristic — paired with HIGH above.
 
 # ---------------------------------------------------------------------------
 # Query classification keywords
@@ -548,21 +573,37 @@ COMPARE_KEYWORDS: list[str] = [
 # ---------------------------------------------------------------------------
 MAX_TRAVERSAL_DEPTH: int = 6           # max hops from entry point
 MAX_TRAVERSAL_NODES: int = 500         # stop if graph grows beyond this
-DEFAULT_LLM_BUDGET: int = 30           # max LLM analysis calls per traversal
+DEFAULT_LLM_BUDGET: int = 30           # Initial heuristic. Chosen to cover ~80% of
+                                       # entry-point-reachable functions in a medium-size
+                                       # repo (<200 files) without exceeding Groq free-tier
+                                       # rate limits. Coverage-vs-cost tradeoff not formally
+                                       # measured.
 
 # ---------------------------------------------------------------------------
 # Hub node detection
 # ---------------------------------------------------------------------------
-HUB_NODE_THRESHOLD: int = 5            # called by >= 5 nodes = hub
+HUB_NODE_THRESHOLD: int = 5            # Initial heuristic. Any function with in-degree
+                                       # >= 5 is flagged as an architectural hub. On stdlib-
+                                       # heavy repos (e.g. Flask), utility functions like
+                                       # os.path.join or jsonify may be incorrectly flagged.
+                                       # Calibration per repo size or a relative threshold
+                                       # (e.g. top 5% by in-degree) would be more robust.
 
 # ---------------------------------------------------------------------------
 # LLM analysis eligibility (only these get deep LLM analysis)
 # ---------------------------------------------------------------------------
 ANALYZE_ENTRY_POINTS: bool = True      # always analyze entry points
 ANALYZE_HUBS: bool = True              # analyze hub nodes
-ANALYZE_DEPTH_THRESHOLD: int = 3       # analyze nodes at depth <= 3
-ANALYZE_CROSS_LAYER: bool = True       # analyze nodes that cross layers
-MIN_COMPLEXITY_FOR_ANALYSIS: int = 3   # only analyze if complexity >= 3
+ANALYZE_DEPTH_THRESHOLD: int = 3       # Initial heuristic — nodes at depth > 3 are
+                                       # assumed to be implementation details, not
+                                       # architectural concerns. Not validated.
+ANALYZE_CROSS_LAYER: bool = True       # Always analyze cross-layer calls (sensible default).
+MIN_COMPLEXITY_FOR_ANALYSIS: int = 3   # Initial heuristic. NOTE: the complexity score is
+                                       # keyword token frequency (count of 'if', 'for', etc.
+                                       # in the function body) — it is NOT cyclomatic
+                                       # complexity (unique control-flow paths). A score of
+                                       # 3 means the function body contains 3 branching
+                                       # keywords, not that it has 3 independent paths.
 
 # ---------------------------------------------------------------------------
 # Architectural layer detection — file path signals

@@ -50,6 +50,46 @@ def _timeout_handler(signum: int, frame: object) -> None:
     raise TimeoutError("Tree-sitter parse timed out")
 
 
+# ---------------------------------------------------------------------------
+# Platform note: SIGALRM is POSIX-only (Linux, macOS). It is NOT available
+# on Windows (signal.SIGALRM does not exist there).
+#
+# Where this timeout is safe to use:
+#   parse_file() is called synchronously from parse_orchestrator.py's
+#   plain ``for`` loop (not from an asyncio coroutine). SIGALRM delivers
+#   to the main thread and correctly interrupts the synchronous tree-sitter
+#   C extension — this is the only context in which SIGALRM works reliably
+#   in Python.
+#
+# Where it would NOT be safe (do not call parse_file() from):
+#   - An ``async def`` task running directly in the asyncio event loop.
+#     Signals fire on the main thread; asyncio tasks are cooperative and
+#     never get interrupted. Use asyncio.wait_for() + run_in_executor() in
+#     that scenario.
+#   - A Windows deployment — signal.SIGALRM is absent; the ``use_timeout``
+#     guard below makes this a visible logged warning rather than a silent
+#     AttributeError or no-op.
+# ---------------------------------------------------------------------------
+import platform as _platform
+
+def _warn_timeout_unavailable_once() -> None:
+    """Emit a one-time warning when SIGALRM is unavailable (Windows)."""
+    import warnings
+    warnings.warn(
+        "parse_file() timeout is DISABLED on this platform "
+        f"({_platform.system()}). Files with malformed or adversarially-crafted "
+        "syntax may hang the parse step indefinitely. "
+        "Run on Linux/macOS for timeout protection, or use "
+        "asyncio.wait_for(loop.run_in_executor(None, parser.parse_file, path), "
+        "timeout=MAX_FILE_PARSE_TIMEOUT_SECONDS) in an async context.",
+        RuntimeWarning,
+        stacklevel=4,
+    )
+
+_timeout_unavailable_warned: bool = False  # module-level guard for one-time warning
+
+
+
 class BaseParser(ABC):
     """
     Abstract base class for all CodeAutopsy language parsers.
@@ -233,12 +273,19 @@ class BaseParser(ABC):
             )
 
         # ------------------------------------------------------------------
-        # Tree-sitter parse with timeout
+        # Tree-sitter parse with SIGALRM timeout (POSIX only).
+        # See the module-level comment above _warn_timeout_unavailable_once()
+        # for the full explanation of when this is and is not safe.
         # ------------------------------------------------------------------
         tree = None
         try:
-            # Use SIGALRM for timeout on POSIX; no-op on Windows
             use_timeout = hasattr(signal, "SIGALRM")
+            if not use_timeout:
+                # Emit a one-time visible warning on non-POSIX platforms (Windows).
+                global _timeout_unavailable_warned
+                if not _timeout_unavailable_warned:
+                    _timeout_unavailable_warned = True
+                    _warn_timeout_unavailable_once()
             if use_timeout:
                 signal.signal(signal.SIGALRM, _timeout_handler)
                 signal.alarm(MAX_FILE_PARSE_TIMEOUT_SECONDS)
